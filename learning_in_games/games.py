@@ -17,6 +17,20 @@ class GameConfig:
 @dataclass
 class RouteConfig(GameConfig):
     cost: float
+    
+@dataclass
+class TwoSourcesGameConfig:
+    n_agents_1: int
+    n_agents_2: int
+    n_states_1: int
+    n_states_2: int
+    n_actions_1: int
+    n_actions_2: int
+    n_iter: int
+    
+    @property
+    def n_agents(self):
+        return self.n_agents_1 + self.n_agents_2
 
 
 def braess_augmented_network(actions, config: RouteConfig):
@@ -32,8 +46,8 @@ def braess_augmented_network(actions, config: RouteConfig):
     n_down = (actions == 1).sum()
     n_cross = (actions == 2).sum()
 
-    r_0 = 1 + (n_up + n_cross) / n_agents
-    r_1 = 1 + (n_down + n_cross) / n_agents
+    r_0 = 1.00001 + (n_up + n_cross) / n_agents
+    r_1 = 1.00001 + (n_down + n_cross) / n_agents
     r_2 = (n_up + n_cross) / n_agents + (n_down + n_cross) / n_agents + config.cost
 
     T = np.array([-r_0, -r_1, -r_2])
@@ -50,16 +64,41 @@ def braess_initial_network(actions, config: RouteConfig):
     :param config: dataclass of parameters for the game
     :return:
     """
-    n_agents = config.n_actions
+    n_agents = config.n_agents
     n_up = (actions == 0).sum()
     n_down = (actions == 1).sum()
 
-    r_0 = 1 + n_up / n_agents
-    r_1 = 1 + n_down / n_agents
+    r_0 = 1.00001 + n_up / n_agents
+    r_1 = 1.00001 + n_down / n_agents
 
     T = np.array([-r_0, -r_1])
     R = T[actions]
     return R, T
+
+
+def fairness_braess(actions_1, actions_2, config: TwoSourcesGameConfig):
+    """
+    Network from the Braess Paradox with two sources and one destination.
+    """
+
+    n1_up = (actions_1 == 0).sum()
+    n1_down = (actions_1 == 1).sum()
+
+    n2_up = (actions_2 == 0).sum()
+    n2_down = (actions_2 == 1).sum()
+
+    r1_up = 1.00001 + n1_up / config.n_agents
+    r1_down = 1.00001 + (n1_down + n2_down) / config.n_agents
+    
+    r2_up = 1.00001 + n2_up / config.n_agents
+    r2_down = 1.00001 + (n2_down + n1_down) / config.n_agents
+
+    T1 = np.array([-r1_up, -r1_down])
+    T2 = np.array([-r2_up, -r2_down])
+    R = (T1[actions_1], T2[actions_2])
+    
+    return R, T1, T2
+
 
 
 def two_route_game(actions, config: RouteConfig):
