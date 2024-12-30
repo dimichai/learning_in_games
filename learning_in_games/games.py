@@ -19,18 +19,16 @@ class RouteConfig(GameConfig):
     cost: float
     
 @dataclass
-class TwoSourcesGameConfig:
-    n_agents_1: int
-    n_agents_2: int
-    n_states_1: int
-    n_states_2: int
-    n_actions_1: int
-    n_actions_2: int
+class NSourcesGameConfig:
+    n_sources: int
+    n_agents_by_source: list
+    n_states_by_source: list
+    n_actions_by_source: list
     n_iter: int
     
     @property
-    def n_agents(self):
-        return self.n_agents_1 + self.n_agents_2
+    def total_agents(self):
+        return sum(self.n_agents_by_source)
 
 
 def braess_augmented_network(actions, config: RouteConfig):
@@ -70,13 +68,35 @@ def braess_initial_network(actions, config: RouteConfig):
 
     r_0 = 1.00001 + n_up / n_agents
     r_1 = 1.00001 + n_down / n_agents
+    
 
     T = np.array([-r_0, -r_1])
     R = T[actions]
     return R, T
 
+def fairness_braess_simple(actions_1, actions_2, config: NSourcesGameConfig):
+    """
+    Network from the Braess Paradox with two sources and one destination.
+    """
 
-def fairness_braess(actions_1, actions_2, config: TwoSourcesGameConfig):
+    n1_up = (actions_1 == 0).sum()
+    n1_cross = (actions_1 == 1).sum()
+
+    n2_down = (actions_2 == 0).sum()
+
+    r1_up = 2.00001 + n1_up / config.n_agents_1
+    r1_cross = (n1_up + n1_cross) / config.n_agents_1 + (n2_down + n1_cross) / config.n_agents_2
+    
+    r2_down = 1.00001 + (n2_down + n1_cross) / config.n_agents_2
+
+    T1 = np.array([-r1_up, -r1_cross])
+    T2 = np.array([-r2_down])
+    R = (T1[actions_1], T2[actions_2])
+    T = (T1, T2)
+    
+    return R, T
+
+def fairness_braess(actions_1, actions_2, config: NSourcesGameConfig):
     """
     Network from the Braess Paradox with two sources and one destination.
     """
@@ -87,17 +107,61 @@ def fairness_braess(actions_1, actions_2, config: TwoSourcesGameConfig):
     n2_up = (actions_2 == 0).sum()
     n2_down = (actions_2 == 1).sum()
 
-    r1_up = 1.00001 + n1_up / config.n_agents
-    r1_down = 1.00001 + (n1_down + n2_down) / config.n_agents
+    r1_up = 1.00001 + n1_up / config.n_agents_by_source[0]
+    r1_down = 1.00001 + (n1_down + n2_down) / config.n_agents_by_source[1]
     
-    r2_up = 1.00001 + n2_up / config.n_agents
-    r2_down = 1.00001 + (n2_down + n1_down) / config.n_agents
+    r2_up = 1.00001 + n2_up / config.n_agents_by_source[1]
+    r2_down = 1.00001 + (n2_down + n1_down) / config.n_agents_by_source[1]
 
     T1 = np.array([-r1_up, -r1_down])
     T2 = np.array([-r2_up, -r2_down])
     R = (T1[actions_1], T2[actions_2])
+    T = (T1, T2)
     
-    return R, T1, T2
+    return R, T
+
+def fairness_braess_intervention_2(actions_1, actions_2, config: NSourcesGameConfig):
+    """
+    Network from the Braess Paradox with two sources and one destination.
+    """
+    n1_up = (actions_1 == 0).sum()
+    n1_down = (actions_1 == 1).sum()
+    n1_upshortcut = (actions_1 == 2).sum()
+
+    n2_up = (actions_2 == 0).sum()
+    n2_down = (actions_2 == 1).sum()
+    n2_upshortcut = (actions_2 == 2).sum()
+    
+    cap_A1C = config.n_agents_by_source[0]
+    cap_A2C = config.n_agents_by_source[1]
+    cap_DB =  config.n_agents_by_source[1]
+
+    # r1_up = n1_up + 101
+    r1_up = 1.00001 + (n1_up + n1_upshortcut) / cap_A1C
+    # r1_up = 1.00001 + 2.00001
+    # r1_down = 101 + n1_down + n2_down + n1_upshortcut + n2_upshortcut
+    r1_down = 1.00001 + (n1_down + n2_down + n1_upshortcut + n2_upshortcut) / cap_DB
+    # r1_down = 2.00001 + 1.00001
+    # r1_upshortcut = n1_upshortcut + n1_up + n1_upshortcut + n1_down + n2_down + n2_upshortcut
+    r1_upshortcut = (n1_upshortcut + n1_up) / cap_A1C + (n1_upshortcut + n1_down + n2_down + n2_upshortcut) / cap_DB
+    # r1_upshortcut = 1.00001 + 1.00001
+    
+    # r2_up = n2_up + 101
+    r2_up = (n2_up + n2_upshortcut) / cap_A2C + 1.00001
+    # r2_up = 1.00001 + 2.00001
+    # r2_down = 101 + n2_down + n1_down +  n1_upshortcut + n2_upshortcut
+    r2_down = 1.0001 + (n2_down + n1_down +  n1_upshortcut + n2_upshortcut) / cap_DB
+    # r2_down = 2.00001 + 1.00001
+    # r2_upshortcut = n2_up + n2_upshortcut + n2_down + n2_upshortcut + n1_down + n1_upshortcut
+    r2_upshortcut = (n2_up + n2_upshortcut) / cap_A2C + (n2_down + n2_upshortcut + n1_down + n1_upshortcut) / cap_DB
+    # r2_upshortcut = 1.00001 + 1.00001
+
+    T1 = np.array([-r1_up, -r1_down, -r1_upshortcut])
+    T2 = np.array([-r2_up, -r2_down, -r2_upshortcut])
+    R = (T1[actions_1], T2[actions_2])
+    T = (T1, T2)
+    
+    return R, T
 
 
 
@@ -133,7 +197,7 @@ def pigou(actions, config):
     n_down = (actions == 1).sum()
     pct = n_down / n_agents
 
-    r_0 = config.cost
+    r_0 = config.cost + 0.00001
     r_1 = pct
 
     T = np.array([-r_0, -r_1])
