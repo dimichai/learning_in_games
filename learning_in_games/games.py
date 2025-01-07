@@ -106,12 +106,21 @@ def fairness_braess(actions_1, actions_2, config: NSourcesGameConfig):
 
     n2_up = (actions_2 == 0).sum()
     n2_down = (actions_2 == 1).sum()
-
-    r1_up = 1.0001 + n1_up / config.n_agents_by_source[0]
-    r1_down = 1.0001 + (n1_down + n2_down) / config.n_agents_by_source[1]
     
-    r2_up = 1.0001 + n2_up / config.n_agents_by_source[1]
-    r2_down = 1.0001 + (n2_down + n1_down) / config.n_agents_by_source[1]
+    cap_A1C = config.n_agents_by_source[0]
+    cap_A2C = config.n_agents_by_source[1]
+    # cap_DB = config.n_agents_by_source[1]
+    cap_DB = config.total_agents
+    
+    flow_A1C = n1_up
+    flow_A2C = n2_up
+    flow_DB = n1_down + n2_down
+
+    r1_up = 1.0001 + flow_A1C / cap_A1C
+    r1_down = 1.0001 + flow_DB / cap_DB
+    
+    r2_up = 1.0001 + flow_A2C / cap_A2C
+    r2_down = 1.0001 + flow_DB / cap_DB
 
     T1 = np.array([-r1_up, -r1_down])
     T2 = np.array([-r2_up, -r2_down])
@@ -135,7 +144,8 @@ def fairness_braess_intervention_1(actions_1, actions_2, config: NSourcesGameCon
     
     cap_A1C = config.n_agents_by_source[0]
     cap_A2C = config.n_agents_by_source[1]
-    cap_DB =  config.n_agents_by_source[1]
+    # cap_DB =  config.n_agents_by_source[1]
+    cap_DB = config.total_agents
     
     flow_A1C = n1_up
     flow_A2C = n2_up + n1_down_up
@@ -170,7 +180,8 @@ def fairness_braess_intervention_2(actions_1, actions_2, config: NSourcesGameCon
     
     cap_A1C = config.n_agents_by_source[0]
     cap_A2C = config.n_agents_by_source[1]
-    cap_DB =  config.n_agents_by_source[1]
+    # cap_DB =  config.n_agents_by_source[1]
+    cap_DB = config.total_agents
     
     flow_A1C = n1_up + n1_upshortcut
     flow_A2C = n2_up + n2_upshortcut
@@ -208,7 +219,8 @@ def fairness_braess_interventions_1_and_2(actions_1, actions_2, config: NSources
     
     cap_A1C = config.n_agents_by_source[0]
     cap_A2C = config.n_agents_by_source[1]
-    cap_DB =  config.n_agents_by_source[1]
+    # cap_DB =  config.n_agents_by_source[1]
+    cap_DB = config.total_agents
     
     flow_A1C = n1_up + n1_up_shortcut
     flow_A2C = n1_down_up + n1_down_shortcut + n2_up + n2_up_shortcut
