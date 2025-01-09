@@ -27,34 +27,12 @@ class NSourcesGameConfig:
     n_iter: int
     
     @property
-    def total_agents(self):
+    def n_agents(self):
         return sum(self.n_agents_by_source)
+    
+    
 
-
-def braess_augmented_network(actions, config: RouteConfig):
-    """
-    Network from the Braess Paradox with the added link, and the Nash Equilibrium average travel time is 2,
-    but the optimal average travel time is 1.00015: and no players take the added link.
-    :param actions: np.ndarray of Actions indexed by agents
-    :param config: dataclass of parameters for the game
-    :return:
-    """
-    n_agents = config.n_agents
-    n_up = (actions == 0).sum()
-    n_down = (actions == 1).sum()
-    n_cross = (actions == 2).sum()
-
-    r_0 = 1.0001 + (n_up + n_cross) / n_agents
-    r_1 = 1.0001 + (n_down + n_cross) / n_agents
-    r_2 = (n_up + n_cross) / n_agents + (n_down + n_cross) / n_agents + config.cost
-
-    T = np.array([-r_0, -r_1, -r_2])
-    R = T[actions]
-    S = None
-    return R, S
-
-
-def braess_initial_network(actions, config: RouteConfig):
+def braess_initial_network(actions, config: NSourcesGameConfig):
     """
     Network from the Braess Paradox without the added link, and the Nash Equilibrium average travel time is 1.00015,
     which is also the optimal average travel time is 1.00015 where players split evenly over the two paths (0.5, 0.5).
@@ -69,10 +47,32 @@ def braess_initial_network(actions, config: RouteConfig):
     r_0 = 1.0001 + n_up / n_agents
     r_1 = 1.0001 + n_down / n_agents
     
-
     T = np.array([-r_0, -r_1])
     R = T[actions]
-    return R, T
+
+    return [R], [T]
+
+def braess_augmented_network(actions, config: NSourcesGameConfig):
+    """
+    Network from the Braess Paradox with the added link, and the Nash Equilibrium average travel time is 2,
+    but the optimal average travel time is 1.00015: and no players take the added link.
+    :param actions: np.ndarray of Actions indexed by agents
+    :param config: dataclass of parameters for the game
+    :return:
+    """
+    n_agents = config.n_agents
+    n_up = (actions == 0).sum()
+    n_down = (actions == 1).sum()
+    n_cross = (actions == 2).sum()
+
+    r_0 = 1.0001 + (n_up + n_cross) / n_agents
+    r_1 = 1.0001 + (n_down + n_cross) / n_agents
+    r_2 = (n_up + n_cross) / n_agents + (n_down + n_cross) / n_agents
+
+    T = np.array([-r_0, -r_1, -r_2])
+    R = T[actions]
+    S = None
+    return [R], [T]
 
 def fairness_braess_simple(actions_1, actions_2, config: NSourcesGameConfig):
     """
@@ -110,7 +110,7 @@ def fairness_braess(actions_1, actions_2, config: NSourcesGameConfig):
     cap_A1C = config.n_agents_by_source[0]
     cap_A2C = config.n_agents_by_source[1]
     # cap_DB = config.n_agents_by_source[1]
-    cap_DB = config.total_agents
+    cap_DB = config.n_agents
     
     flow_A1C = n1_up
     flow_A2C = n2_up
@@ -145,7 +145,7 @@ def fairness_braess_intervention_1(actions_1, actions_2, config: NSourcesGameCon
     cap_A1C = config.n_agents_by_source[0]
     cap_A2C = config.n_agents_by_source[1]
     # cap_DB =  config.n_agents_by_source[1]
-    cap_DB = config.total_agents
+    cap_DB = config.n_agents
     
     flow_A1C = n1_up
     flow_A2C = n2_up + n1_down_up
@@ -181,7 +181,7 @@ def fairness_braess_intervention_2(actions_1, actions_2, config: NSourcesGameCon
     cap_A1C = config.n_agents_by_source[0]
     cap_A2C = config.n_agents_by_source[1]
     # cap_DB =  config.n_agents_by_source[1]
-    cap_DB = config.total_agents
+    cap_DB = config.n_agents
     
     flow_A1C = n1_up + n1_upshortcut
     flow_A2C = n2_up + n2_upshortcut
@@ -220,7 +220,7 @@ def fairness_braess_interventions_1_and_2(actions_1, actions_2, config: NSources
     cap_A1C = config.n_agents_by_source[0]
     cap_A2C = config.n_agents_by_source[1]
     # cap_DB =  config.n_agents_by_source[1]
-    cap_DB = config.total_agents
+    cap_DB = config.n_agents
     
     flow_A1C = n1_up + n1_up_shortcut
     flow_A2C = n1_down_up + n1_down_shortcut + n2_up + n2_up_shortcut
