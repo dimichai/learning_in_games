@@ -12,20 +12,20 @@ class QAgentConfig:
     qinit: Union[np.ndarray]  # initial q-values
 
 
-def initialize_q_table(q_input, gameConfig: GameConfig, qmin=0, qmax=1):
-    if type(q_input) == np.ndarray:
-        if q_input.shape == (gameConfig.n_agents, gameConfig.n_states, gameConfig.n_actions):
-            q_table = q_input
+def initialize_q_table(q_input_type, gameConfig: GameConfig, qmin=0, qmax=1):
+    if type(q_input_type) == np.ndarray:
+        if q_input_type.shape == (gameConfig.n_agents, gameConfig.n_states, gameConfig.n_actions):
+            q_table = q_input_type
         else:
-            q_table = q_input.T * np.ones((gameConfig.n_agents, gameConfig.n_states, gameConfig.n_actions))
-    elif q_input == "UNIFORM":
+            q_table = q_input_type.T * np.ones((gameConfig.n_agents, gameConfig.n_states, gameConfig.n_actions))
+    elif q_input_type == "UNIFORM":
         q_table = (qmax - qmin) * np.random.random_sample(size=(gameConfig.n_agents, gameConfig.n_states, gameConfig.n_actions)) + qmin
-    elif q_input == "ALIGNED":
+    elif q_input_type == "ALIGNED":
         if gameConfig.n_actions == 3:
             q_table = np.array([[-1, -2, -2], [-2, -1, -2], [-2, -2, -1]]).T * np.ones((gameConfig.n_agents, gameConfig.n_states, gameConfig.n_actions))
         elif gameConfig.n_actions == 2:
             q_table = np.array([[-1, -2], [-2, -1]]).T * np.ones((gameConfig.n_agents, gameConfig.n_states, gameConfig.n_actions))
-    elif q_input == "MISALIGNED":
+    elif q_input_type == "MISALIGNED":
         if gameConfig.n_actions == 3:
             q_table = np.array([[-2, -1, -2], [-2, -2, -1], [-1, -2, -2]]).T * np.ones((gameConfig.n_agents, gameConfig.n_states, gameConfig.n_actions))
         elif gameConfig.n_actions == 2:
