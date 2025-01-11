@@ -1,7 +1,7 @@
 import numpy as np
 from dataclasses import dataclass
 from typing import Union
-from .games import GameConfig
+from .games import GameConfig, NSourcesGameConfig
 import math
 
 
@@ -31,6 +31,48 @@ def initialize_q_table(q_input_type, gameConfig: GameConfig, qmin=0, qmax=1):
         elif gameConfig.n_actions == 2:
             q_table = np.array([[-2, -1], [-1, -2]]).T * np.ones((gameConfig.n_agents, gameConfig.n_states, gameConfig.n_actions))
     return q_table
+
+def initialize_q_table_nsources(q_input_type, gameConfig: NSourcesGameConfig, qmin=0, qmax=1):
+    """
+    Initialize Q-tables for each source in NSourcesGameConfig.
+
+    Args:
+        q_input_type: str or np.ndarray specifying the type of initialization.
+        gameConfig: NSourcesGameConfig object containing configuration for multiple sources.
+        qmin: Minimum value for uniform initialization.
+        qmax: Maximum value for uniform initialization.
+    
+    Returns:
+        List of Q-tables, one for each source.
+    """
+    q_tables = []
+    
+    for source_idx in range(gameConfig.n_sources):
+        n_agents = gameConfig.n_agents_by_source[source_idx]
+        n_states = gameConfig.n_states_by_source[source_idx]
+        n_actions = gameConfig.n_actions_by_source[source_idx]
+        
+        if isinstance(q_input_type, np.ndarray):
+            if q_input_type.shape == (n_agents, n_states, n_actions):
+                q_table = q_input_type
+            else:
+                q_table = q_input_type.T * np.ones((n_agents, n_states, n_actions))
+        elif q_input_type == "UNIFORM":
+            q_table = (qmax - qmin) * np.random.random_sample(size=(n_agents, n_states, n_actions)) + qmin
+        elif q_input_type == "ALIGNED":
+            if n_actions == 3:
+                q_table = np.array([[-1, -2, -2], [-2, -1, -2], [-2, -2, -1]]).T * np.ones((n_agents, n_states, n_actions))
+            elif n_actions == 2:
+                q_table = np.array([[-1, -2], [-2, -1]]).T * np.ones((n_agents, n_states, n_actions))
+        elif q_input_type == "MISALIGNED":
+            if n_actions == 3:
+                q_table = np.array([[-2, -1, -2], [-2, -2, -1], [-1, -2, -2]]).T * np.ones((n_agents, n_states, n_actions))
+            elif n_actions == 2:
+                q_table = np.array([[-2, -1], [-1, -2]]).T * np.ones((n_agents, n_states, n_actions))
+        
+        q_tables.append(q_table)
+    
+    return q_tables
 
 
 def initialize_learning_rates(agentConfig: QAgentConfig, gameConfig: GameConfig):
@@ -79,6 +121,24 @@ def bellman_update_q_table(Q, S, A, R, S_, agentConfig: QAgentConfig):
     return Q, np.abs(all_belief_updates).sum()
 
 
+def bellman_update_q_table_nsources(Q, S, A, R, S_, agentConfig: QAgentConfig):
+    """
+    Performs a one-step update using the bellman update equation for Q-learning.
+    :param agentConfig:
+    :param Q: np.ndarray Q-table indexed by (agents, states, actions)
+    :param S: np.ndarray States indexed by (agents)
+    :param A: np.ndarray Actions indexed by (agents)
+    :param R: np.ndarray Rewards indexed by (agents)
+    :param S_: np.ndarray Next States indexed by (agents)
+    :return: np.ndarray Q-table indexed by (agents, states, actions)
+    """
+    ind = [np.arange(len(s)) for s in S]
+    all_belief_updates = [agentConfig.alpha * (R[i] + agentConfig.gamma * Q[i][ind[i], S_[i]].max(axis=1) - Q[i][ind[i], S[i], A[i]]) for i in range(len(S))]
+    for i in range(len(S)):
+        Q[i][ind[i], S[i], A[i]] = Q[i][ind[i], S[i], A[i]] + all_belief_updates[i]
+    return Q, [np.abs(all_belief_updates[i]).sum() for i in range(len(S))]
+
+
 @dataclass
 class EpsilonGreedyConfig(QAgentConfig):
     epsilon: Union[float, str]
@@ -100,6 +160,22 @@ def e_greedy_select_action(Q, S, agentConfig: EpsilonGreedyConfig):
     A = np.where(rand >= agentConfig.epsilon,
                  np.argmax(Q[indices, S, :], axis=1),
                  randA)
+    return A
+
+def e_greedy_select_action_nsources(Q, S, agentConfig: EpsilonGreedyConfig):
+    """
+    Select actions based on an epsilon greedy policy. Epsilon determines the probability with which
+    an action is selected at random. Otherwise, the action is selected as the argmax of the state.
+    During the argmax operation and given a tie the argmax operator selects the first occurrence.
+    :param agentConfig:
+    :param Q: np.ndarray Q-table indexed by (agents, states, actions)
+    :param S: np.ndarray States indexed by (agents)
+    :return: np.ndarray Actions indexed by (agents)
+    """
+    indices = [np.arange(len(s)) for s in S]
+    rng_exploration = [np.random.random_sample(size=len(s)) for s in S]
+    rng_action = [np.random.randint(len(Q[i][0, 0, :]), size=len(S[i])) for i in range(len(S))]
+    A = [np.where(rng_exploration[i] >= agentConfig.epsilon, np.argmax(Q[i][indices[i], S[i], :], axis=1), rng_action[i]) for i in range(len(S))]
     return A
 
 
