@@ -174,8 +174,9 @@ def e_greedy_select_action_nsources(Q, S, agentConfig: EpsilonGreedyConfig):
     """
     indices = [np.arange(len(s)) for s in S]
     rng_exploration = [np.random.random_sample(size=len(s)) for s in S]
-    rng_action = [np.random.randint(len(Q[i][0, 0, :]), size=len(S[i])) for i in range(len(S))]
+    rng_action = [np.random.randint(len(Q[i][0, 0, :]), size=len(S[i])) if Q[i].size > 0 else np.array([]) for i in range(len(S))]
     A = [np.where(rng_exploration[i] >= agentConfig.epsilon, np.argmax(Q[i][indices[i], S[i], :], axis=1), rng_action[i]) for i in range(len(S))]
+    A = [a.astype(int) for a in A]
     return A
 
 
