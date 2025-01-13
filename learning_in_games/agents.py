@@ -48,7 +48,12 @@ def initialize_agent_configs_n_sources(epsilon_strategy: str, gameConfig: GameCo
                 epsilon_end = 0
                 agentConfig = EpsilonGreedyConfig(alpha, gamma, qinit, epsilon_start, epsilon_end, epsilon_start)
             elif epsilon_strategy == "CONSTANT":
-                epsilon = epsilon_init if epsilon_init_strategy == "EQUAL" else np.random.random_sample()
+                if epsilon_init_strategy == "EQUAL":
+                    epsilon = epsilon_init
+                elif epsilon_init_strategy == "SOURCE":
+                    epsilon = epsilon_init[source_idx]
+                else:
+                    epsilon = np.random.random_sample()
                 agentConfig = EpsilonGreedyConfig(alpha, gamma, qinit, epsilon, epsilon, epsilon)
             elif epsilon_strategy == "BOLTZMANN":
                 agentConfig = BoltzmannAgentConfig(alpha, gamma, qinit, 1)
