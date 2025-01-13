@@ -23,7 +23,7 @@ class BoltzmannAgentConfig(QAgentConfig):
     temperature: Union[float, str]
 
 
-def initialize_agent_configs_n_sources(epsilon_strategy: str, gameConfig: GameConfig, alpha: Union[np.ndarray, float], gamma: Union[np.ndarray, float], qinit: Union[np.ndarray], epsilon_init="EQUAL"):
+def initialize_agent_configs_n_sources(epsilon_strategy: str, gameConfig: GameConfig, alpha: Union[np.ndarray, float], gamma: Union[np.ndarray, float], qinit: Union[np.ndarray], epsilon_init_strategy="EQUAL", epsilon_init=None):
     """
     Initialize agent configurations for n sources.
 
@@ -44,20 +44,18 @@ def initialize_agent_configs_n_sources(epsilon_strategy: str, gameConfig: GameCo
         source_configs = []
         for _ in range(gameConfig.n_agents_by_source[source_idx]):
             if epsilon_strategy == "DECAYED":
-                if epsilon_init == "EQUAL":
-                    epsilon_start = 1
-                    epsilon_end = 0
-                elif epsilon_init == "UNIFORM":
-                    epsilon_start = np.random.random_sample()
-                    epsilon_end = 0
+                epsilon_start = epsilon_init if epsilon_init_strategy == "EQUAL" else np.random.random_sample()
+                epsilon_end = 0
                 agentConfig = EpsilonGreedyConfig(alpha, gamma, qinit, epsilon_start, epsilon_end, epsilon_start)
+            elif epsilon_strategy == "CONSTANT":
+                epsilon = epsilon_init if epsilon_init_strategy == "EQUAL" else np.random.random_sample()
+                agentConfig = EpsilonGreedyConfig(alpha, gamma, qinit, epsilon, epsilon, epsilon)
             elif epsilon_strategy == "BOLTZMANN":
                 agentConfig = BoltzmannAgentConfig(alpha, gamma, qinit, 1)
             else:
                 agentConfig = QAgentConfig(alpha, gamma, qinit)
             source_configs.append(agentConfig)
         configs_by_source.append(source_configs)
-    
     return configs_by_source
     
 
