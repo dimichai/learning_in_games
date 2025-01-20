@@ -44,7 +44,12 @@ def initialize_agent_configs_n_sources(epsilon_strategy: str, gameConfig: GameCo
         source_configs = []
         for _ in range(gameConfig.n_agents_by_source[source_idx]):
             if epsilon_strategy == "DECAYED":
-                epsilon_start = epsilon_init if epsilon_init_strategy == "EQUAL" else np.random.random_sample()
+                if epsilon_init_strategy == "EQUAL":
+                    epsilon_start = epsilon_init
+                elif epsilon_init_strategy == "SOURCE":
+                    epsilon_start = epsilon_init[source_idx]
+                else:
+                    epsilon_start = np.random.random_sample()
                 epsilon_end = 0
                 agentConfig = EpsilonGreedyConfig(alpha, gamma, qinit, epsilon_start, epsilon_end, epsilon_start)
             elif epsilon_strategy == "CONSTANT":
@@ -217,7 +222,7 @@ def e_greedy_select_action(Q, S, agentConfig: EpsilonGreedyConfig):
                 randA)
     return A
 
-def e_greedy_select_action_nsources(Q, S, agentConfigs: list):
+def e_greedy_select_action_nsources(Q, S, agentConfigs: list, greedy=False):
     """
     Select actions based on an epsilon greedy policy. Epsilon determines the probability with which
     an action is selected at random. Otherwise, the action is selected as the argmax of the state.
@@ -225,6 +230,7 @@ def e_greedy_select_action_nsources(Q, S, agentConfigs: list):
     :param agentConfig:
     :param Q: np.ndarray Q-table indexed by (agents, states, actions)
     :param S: np.ndarray States indexed by (agents)
+    :param greedy: bool If True, select actions greedily ignoring epsilon.
     :return: np.ndarray Actions indexed by (agents)
     """
     indices = [np.arange(len(s)) for s in S]
@@ -236,8 +242,11 @@ def e_greedy_select_action_nsources(Q, S, agentConfigs: list):
         if Q[i].size == 0:
             A.append(np.array([], dtype=int))
             continue
-        actions = np.where(rng_exploration[i] >= np.array([agentConfigs[i][j].epsilon for j in range(len(S[i]))]),
-                        np.argmax(Q[i][indices[i], S[i], :], axis=1), random_action[i])
+        if greedy:
+            actions = np.argmax(Q[i][indices[i], S[i], :], axis=1)
+        else:
+            actions = np.where(rng_exploration[i] >= np.array([agentConfigs[i][j].epsilon for j in range(len(S[i]))]),
+                            np.argmax(Q[i][indices[i], S[i], :], axis=1), random_action[i])
         A.append(actions.astype(int))
         
     return A
