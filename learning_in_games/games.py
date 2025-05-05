@@ -107,7 +107,7 @@ def fairness_braess_simple(actions_1, actions_2, config: NSourcesGameConfig):
     
     return R, T
 
-def fairness_braess(actions_1, actions_2, config: NSourcesGameConfig):
+def fairness_braess(actions_1, actions_2, config: NSourcesGameConfig, cost_A2D=1.0001):
     """
     Network from the Braess Paradox with two sources and one destination.
     """
@@ -131,7 +131,7 @@ def fairness_braess(actions_1, actions_2, config: NSourcesGameConfig):
     r1_down = 1.0001 + flow_DB / cap_DB
     
     r2_up = 1.0001 + flow_A2C / cap_A2C
-    r2_down = 1.0001 + flow_DB / cap_DB
+    r2_down = cost_A2D + flow_DB / cap_DB
 
     T1 = np.array([-r1_up, -r1_down])
     T2 = np.array([-r2_up, -r2_down])
@@ -141,7 +141,7 @@ def fairness_braess(actions_1, actions_2, config: NSourcesGameConfig):
     return R, T
 
 
-def fairness_braess_intervention_1(actions_1, actions_2, config: NSourcesGameConfig):
+def fairness_braess_intervention_1(actions_1, actions_2, config: NSourcesGameConfig, cost_A2D=1.0001):
     """
     Network from the Braess Paradox with two sources and one destination.
     """
@@ -165,10 +165,10 @@ def fairness_braess_intervention_1(actions_1, actions_2, config: NSourcesGameCon
     r1_up = 1.0001 + flow_A1C / cap_A1C
     r1_down = 1.0001 + flow_DB / cap_DB
     r1_down_up = 1.0001 + flow_A2C/ cap_A2C
-    r1_down_down = 1.0001 + flow_DB / cap_DB
+    r1_down_down = cost_A2D + flow_DB / cap_DB
     
     r2_up = flow_A2C / cap_A2C + 1.0001
-    r2_down = 1.0001 + flow_DB / cap_DB
+    r2_down = cost_A2D + flow_DB / cap_DB
 
     T1 = np.array([-r1_up, -r1_down, -r1_down_up, -r1_down_down])
     T2 = np.array([-r2_up, -r2_down])
@@ -177,7 +177,7 @@ def fairness_braess_intervention_1(actions_1, actions_2, config: NSourcesGameCon
     
     return R, T
 
-def fairness_braess_intervention_2(actions_1, actions_2, config: NSourcesGameConfig):
+def fairness_braess_intervention_2(actions_1, actions_2, config: NSourcesGameConfig, cost_A2D=1.0001):
     """
     Network from the Braess Paradox with two sources and one destination.
     """
@@ -203,7 +203,7 @@ def fairness_braess_intervention_2(actions_1, actions_2, config: NSourcesGameCon
     r1_upshortcut = flow_A1C / cap_A1C + flow_DB / cap_DB
     
     r2_up = flow_A2C / cap_A2C + 1.0001
-    r2_down = 1.0001 + flow_DB / cap_DB
+    r2_down = cost_A2D + flow_DB / cap_DB
     r2_upshortcut = flow_A2C / cap_A2C + flow_DB / cap_DB
 
     T1 = np.array([-r1_up, -r1_down, -r1_upshortcut])
@@ -213,7 +213,7 @@ def fairness_braess_intervention_2(actions_1, actions_2, config: NSourcesGameCon
     
     return R, T
 
-def fairness_braess_interventions_1_and_2(actions_1, actions_2, config: NSourcesGameConfig):
+def fairness_braess_interventions_1_and_2(actions_1, actions_2, config: NSourcesGameConfig, cost_A2D=1.0001):
     """
     Network from the Braess Paradox with two sources and one destination.
     """
@@ -241,11 +241,11 @@ def fairness_braess_interventions_1_and_2(actions_1, actions_2, config: NSources
     r1_down = 1.0001 + flow_DB / cap_DB
     r1_up_shortcut = flow_A1C / cap_A1C + flow_DB / cap_DB
     r1_down_up = 1.0001 + flow_A2C / cap_A2C
-    r1_down_down = 1.0001 + flow_DB / cap_DB
+    r1_down_down = cost_A2D + flow_DB / cap_DB
     r1_down_shortcut = 1.0001 + flow_A2C / cap_A2C + flow_DB / cap_DB
     
     r2_up = flow_A2C / cap_A2C + 1.0001
-    r2_down = 1.0001 + flow_DB / cap_DB
+    r2_down = cost_A2D + flow_DB / cap_DB
     r2_up_shortcut = flow_A2C / cap_A2C + flow_DB / cap_DB
 
     T1 = np.array([-r1_up, -r1_down, -r1_up_shortcut, -r1_down_up, -r1_down_down, -r1_down_shortcut])
