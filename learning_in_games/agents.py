@@ -30,7 +30,7 @@ def initialize_agent_configs_n_sources(epsilon_strategy: str, gameConfig: GameCo
     Args:
         epsilon_strategy: Epsilon strategy for exploration.
         gameConfig: GameConfig object containing configuration for multiple sources.
-        alpha: Learning rate.
+        alpha: Learning rate. If it's float, then all sources have the same LR. If it is a list, then the LR is list specific.
         gamma: Discount factor.
         qinit: Initial Q-values.
     
@@ -38,6 +38,13 @@ def initialize_agent_configs_n_sources(epsilon_strategy: str, gameConfig: GameCo
         List of QAgentConfig objects, one for each agent.
     """
     n_sources = gameConfig.n_sources
+    
+    if isinstance(alpha, (int, float)):
+        alphas = [alpha] * n_sources
+    else:
+        assert len(alpha) == n_sources, f"Number of alphas ({len(alpha)}) must match number of sources ({n_sources})"
+        alphas = alpha
+
 
     configs_by_source = []
     for source_idx in range(n_sources):
@@ -51,7 +58,7 @@ def initialize_agent_configs_n_sources(epsilon_strategy: str, gameConfig: GameCo
                 else:
                     epsilon_start = np.random.random_sample()
                 epsilon_end = 0
-                agentConfig = EpsilonGreedyConfig(alpha, gamma, qinit, epsilon_start, epsilon_end, epsilon_start)
+                agentConfig = EpsilonGreedyConfig(alphas[source_idx], gamma, qinit, epsilon_start, epsilon_end, epsilon_start)
             elif epsilon_strategy == "CONSTANT":
                 if epsilon_init_strategy == "EQUAL":
                     epsilon = epsilon_init
@@ -59,11 +66,11 @@ def initialize_agent_configs_n_sources(epsilon_strategy: str, gameConfig: GameCo
                     epsilon = epsilon_init[source_idx]
                 else:
                     epsilon = np.random.random_sample()
-                agentConfig = EpsilonGreedyConfig(alpha, gamma, qinit, epsilon, epsilon, epsilon)
+                agentConfig = EpsilonGreedyConfig(alphas[source_idx], gamma, qinit, epsilon, epsilon, epsilon)
             elif epsilon_strategy == "BOLTZMANN":
-                agentConfig = BoltzmannAgentConfig(alpha, gamma, qinit, 1)
+                agentConfig = BoltzmannAgentConfig(alphas[source_idx], gamma, qinit, 1)
             else:
-                agentConfig = QAgentConfig(alpha, gamma, qinit)
+                agentConfig = QAgentConfig(alphas[source_idx], gamma, qinit)
             source_configs.append(agentConfig)
         configs_by_source.append(source_configs)
     return configs_by_source
