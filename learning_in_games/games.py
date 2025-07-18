@@ -256,6 +256,61 @@ def fairness_braess_interventions_1_and_2(actions_1, actions_2, config: NSources
     return R, T
 
 
+def amsterdam_metro(actions_w, actions_e, config: NSourcesGameConfig, intervention=False):
+    """
+    Network from the Amsterdam Metro with two sources and one destination.
+    """
+    
+    # w: west, s: south, e: east, c: central, a: amstel
+    west_south_amstel_central = (actions_w == 0).sum()
+    if intervention:
+        west_south_central = (actions_w == 1).sum()
+    else:
+        west_south_central = 0
+    
+    east_amstel_central = (actions_e == 0).sum()
+    east_south_amstel_central = (actions_e == 1).sum()
+    if intervention:
+        east_south_central = (actions_e == 2).sum()
+    else:
+        east_south_central = 0
+    
+    flow_west_south = west_south_amstel_central + west_south_central
+    flow_south_amstel = west_south_amstel_central + east_south_amstel_central
+    flow_east_south = east_south_central
+    flow_east_amstel = east_amstel_central
+    flow_amstel_central = west_south_amstel_central + east_amstel_central + east_south_amstel_central
+    if intervention:
+        flow_south_central = west_south_central + east_south_central
+        
+    rw_west_south_amstel_central = flow_west_south + flow_south_amstel + flow_amstel_central
+    rw_east_amstel_central = flow_east_amstel + flow_amstel_central
+    rw_east_south_amstel_central = flow_east_south + flow_south_amstel + flow_amstel_central
+    
+    if intervention:
+        rw_west_south_central = flow_west_south + flow_south_central
+        rw_east_south_central = flow_east_south + flow_south_central
+    
+    if intervention:
+        T1 = np.array([-rw_west_south_amstel_central, -rw_west_south_central])
+        T2 = np.array([-rw_east_amstel_central, -rw_east_south_amstel_central, -rw_east_south_central])
+    else:
+        T1 = np.array([-rw_west_south_amstel_central])
+        T2 = np.array([-rw_east_amstel_central, -rw_east_south_amstel_central])
+    
+    R = (T1[actions_w], T2[actions_e])
+    T = (T1, T2)
+    
+    return R, T
+
+def amsterdam_metro_north_south_intervention(actions_w, actions_e, config: NSourcesGameConfig):
+    """
+    Network from the Amsterdam Metro with two sources and one destination.
+    This is a variant of the amsterdam_metro function where the intervention is applied.
+    """
+    return amsterdam_metro(actions_w, actions_e, config, intervention=True)
+
+
 def two_route_game(actions, config: RouteConfig):
     """
     A two path routing game where the cost parameter can be used to vary the edge costs from one extreme, where the
