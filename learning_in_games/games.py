@@ -274,22 +274,42 @@ def amsterdam_metro(actions_w, actions_e, config: NSourcesGameConfig, interventi
         east_south_central = (actions_e == 2).sum()
     else:
         east_south_central = 0
+        
+    # cap_west_south = 1
+    # cap_east_amstel = 1
+    # cap_amstel_central = 1
+    
+    # cap_west_south = 2
+    # cap_east_amstel = 1
+    # cap_amstel_central = 2
+    
+    # cap_west_south = 2
+    # cap_east_amstel = 2
+    # cap_amstel_central = 3
+    
+    cap_west_south = 2
+    cap_east_amstel = 1
+    cap_amstel_central = 3
+
+    cap_south_amstel = 1
+    cap_east_south = 1
+    cap_south_central = 1 if intervention else 0
     
     flow_west_south = west_south_amstel_central + west_south_central
     flow_south_amstel = west_south_amstel_central + east_south_amstel_central
-    flow_east_south = east_south_central
+    flow_east_south = east_south_central + east_south_amstel_central
     flow_east_amstel = east_amstel_central
     flow_amstel_central = west_south_amstel_central + east_amstel_central + east_south_amstel_central
     if intervention:
         flow_south_central = west_south_central + east_south_central
         
-    rw_west_south_amstel_central = flow_west_south + flow_south_amstel + flow_amstel_central
-    rw_east_amstel_central = flow_east_amstel + flow_amstel_central
-    rw_east_south_amstel_central = flow_east_south + flow_south_amstel + flow_amstel_central
+    rw_west_south_amstel_central = flow_west_south / cap_west_south + flow_south_amstel / cap_south_amstel + flow_amstel_central / cap_amstel_central
+    rw_east_amstel_central = flow_east_amstel / cap_east_amstel + flow_amstel_central / cap_amstel_central
+    rw_east_south_amstel_central = flow_east_south / cap_east_south + flow_south_amstel / cap_south_amstel + flow_amstel_central / cap_amstel_central
     
     if intervention:
-        rw_west_south_central = flow_west_south + flow_south_central
-        rw_east_south_central = flow_east_south + flow_south_central
+        rw_west_south_central = flow_west_south / cap_west_south + flow_south_central /cap_south_central
+        rw_east_south_central = flow_east_south / cap_east_south + flow_south_central / cap_south_central
     
     if intervention:
         T1 = np.array([-rw_west_south_amstel_central, -rw_west_south_central])
