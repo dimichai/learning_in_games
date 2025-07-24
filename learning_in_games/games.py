@@ -287,9 +287,17 @@ def amsterdam_metro(actions_w, actions_e, config: NSourcesGameConfig, interventi
     # cap_east_amstel = 2
     # cap_amstel_central = 3
     
-    cap_west_south = 2
+    # cap_west_south = 2
+    # cap_east_amstel = 1
+    # cap_amstel_central = 3
+
+    # cap_south_amstel = 1
+    # cap_east_south = 1
+    # cap_south_central = 1 if intervention else 0
+    
+    cap_west_south = 1
     cap_east_amstel = 1
-    cap_amstel_central = 3
+    cap_amstel_central = 1
 
     cap_south_amstel = 1
     cap_east_south = 1
@@ -423,13 +431,13 @@ def amsterdam_rail(actions_z, actions_e, config: NSourcesGameConfig, interventio
     else:
         east_south_central = 0
     
-    cap_zuidas_south = 1
-    cap_south_west = 1
+    cap_zuidas_south = 1 
+    cap_south_west = 1 
     cap_west_central = 1
     cap_south_amstel = 1
     cap_amstel_central = 1
     cap_east_amstel = 1
-    cap_east_south = 1
+    cap_east_south = 1 
     cap_south_central = 1 if intervention else 0
     
     flow_zuidas_south = zuidas_south_west_central + zuidas_south_amstel_central + zuidas_south_central
@@ -465,6 +473,73 @@ def amsterdam_rail(actions_z, actions_e, config: NSourcesGameConfig, interventio
 
 def amsterdam_rail_intervention(actions_z, actions_e, config: NSourcesGameConfig):
     return amsterdam_rail(actions_z, actions_e, config, intervention=True)
+
+
+def amsterdam_v3(actions_w, actions_e, config: NSourcesGameConfig, intervention=False):
+    """
+    Network from the Amsterdam Metro with two sources and one destination.
+    """
+    
+    west_lely_central = (actions_w == 0).sum()
+    west_south_amstel_central = (actions_w == 1).sum()
+    if intervention:
+        west_south_central = (actions_w == 2).sum()
+    else:
+        west_south_central = 0
+    
+    east_amstel_central = (actions_e == 0).sum()
+    east_south_amstel_central = (actions_e == 1).sum()
+    if intervention:
+        east_south_central = (actions_e == 2).sum()
+    else:
+        east_south_central = 0
+    
+    cap_zuidas_south = 1
+    cap_south_west = 1 
+    cap_west_central = 1
+    cap_south_amstel = 1
+    cap_amstel_central = 1000000
+    cap_east_amstel = 1
+    cap_east_south = 1
+    cap_south_central = 1 if intervention else 0
+    cap_west_lely = 1
+    cap_lely_central = 1
+    cap_west_south = 1
+    
+    flow_west_lely = west_lely_central
+    flow_lely_central = west_lely_central
+    flow_west_south = west_south_amstel_central + west_south_central
+    flow_south_amstel = west_south_amstel_central + east_south_amstel_central
+    flow_amstel_central = west_south_amstel_central + east_amstel_central + east_south_amstel_central
+    flow_east_amstel = east_amstel_central
+    flow_east_south = east_south_central + east_south_amstel_central
+    if intervention:
+        flow_south_central = west_south_central + east_south_central
+        
+    rw_west_lely_central = 1.0001 + flow_west_lely / cap_west_lely + flow_lely_central / cap_lely_central
+    rw_west_south_amstel_central = 1.0001 + flow_west_south / cap_west_south + flow_south_amstel / cap_south_amstel + flow_amstel_central / cap_amstel_central
+    
+    rw_east_amstel_central = 1.0001 + flow_east_amstel / cap_east_amstel + flow_amstel_central / cap_amstel_central
+    rw_east_south_amstel_central = 1.0001 + flow_east_south / cap_east_south + flow_south_amstel / cap_south_amstel + flow_amstel_central / cap_amstel_central
+    
+    if intervention:
+        rw_west_south_central =  1.0001 + flow_west_south / cap_west_south + flow_south_central / cap_south_central
+        rw_east_south_central = 1.0001 + flow_east_south / cap_east_south + flow_south_central / cap_south_central
+    
+    if intervention:
+        T1 = np.array([-rw_west_lely_central, -rw_west_south_amstel_central, -rw_west_south_central])
+        T2 = np.array([-rw_east_amstel_central, -rw_east_south_amstel_central, -rw_east_south_central])
+    else:
+        T1 = np.array([-rw_west_lely_central, -rw_west_south_amstel_central])
+        T2 = np.array([-rw_east_amstel_central, -rw_east_south_amstel_central])
+    
+    R = (T1[actions_w], T2[actions_e])
+    T = (T1, T2)
+    
+    return R, T
+
+def amsterdam_v3_intervention(actions_w, actions_e, config: NSourcesGameConfig):
+    return amsterdam_v3(actions_w, actions_e, config, intervention=True)
 
 
 def two_route_game(actions, config: RouteConfig):
