@@ -256,21 +256,26 @@ def fairness_braess_interventions_1_and_2(actions_1, actions_2, config: NSources
     return R, T
 
 
-def amsterdam_metro(actions_w, actions_e, config: NSourcesGameConfig, intervention=False):
+def amsterdam_metro(actions_w, actions_e, config: NSourcesGameConfig, crowding_multiplier=2.0, intervention_north_south=False, intervention_west_amstel=False):
     """
     Network from the Amsterdam Metro with two sources and one destination.
     """
     
     # w: west, s: south, e: east, c: central, a: amstel
     west_south_amstel_central = (actions_w == 0).sum()
-    if intervention:
+    if intervention_north_south:
         west_south_central = (actions_w == 1).sum()
     else:
         west_south_central = 0
+        
+    if intervention_west_amstel:
+        west_amstel_central = (actions_w == 2).sum()
+    else:
+        west_amstel_central = 0
     
     east_amstel_central = (actions_e == 0).sum()
     east_south_amstel_central = (actions_e == 1).sum()
-    if intervention:
+    if intervention_north_south:
         east_south_central = (actions_e == 2).sum()
     else:
         east_south_central = 0
@@ -295,36 +300,68 @@ def amsterdam_metro(actions_w, actions_e, config: NSourcesGameConfig, interventi
     # cap_east_south = 1
     # cap_south_central = 1 if intervention else 0
     
-    cap_west_south = 1
-    cap_east_amstel = 1
-    cap_amstel_central = 1
+    cap_west_south = config.n_agents
+    cap_east_amstel = config.n_agents
+    cap_amstel_central = config.n_agents
 
-    cap_south_amstel = 1
-    cap_east_south = 1
-    cap_south_central = 1 if intervention else 0
+    cap_south_amstel = config.n_agents
+    cap_east_south = config.n_agents
+    cap_south_central = config.n_agents if intervention_north_south else 0
+    cap_west_amstel = config.n_agents if intervention_west_amstel else 0
     
     flow_west_south = west_south_amstel_central + west_south_central
     flow_south_amstel = west_south_amstel_central + east_south_amstel_central
     flow_east_south = east_south_central + east_south_amstel_central
     flow_east_amstel = east_amstel_central
-    flow_amstel_central = west_south_amstel_central + east_amstel_central + east_south_amstel_central
-    if intervention:
+    flow_amstel_central = west_south_amstel_central + east_amstel_central + east_south_amstel_central + west_amstel_central
+    if intervention_north_south:
         flow_south_central = west_south_central + east_south_central
+    if intervention_west_amstel:
+        flow_west_amstel = west_amstel_central
         
-    rw_west_south_amstel_central = 1.0001 + flow_west_south / cap_west_south + flow_south_amstel / cap_south_amstel + flow_amstel_central / cap_amstel_central
-    rw_east_amstel_central = 1.0001 + flow_east_amstel / cap_east_amstel + flow_amstel_central / cap_amstel_central
-    rw_east_south_amstel_central = 1.0001 + flow_east_south / cap_east_south + flow_south_amstel / cap_south_amstel + flow_amstel_central / cap_amstel_central
+    # rw_west_south_amstel_central = 1.7001 + flow_west_south / cap_west_south + 1.1001 + flow_south_amstel / cap_south_amstel + 1.001 + flow_amstel_central / cap_amstel_central
+    # rw_east_amstel_central = 1.0001 + flow_east_amstel / cap_east_amstel + 1.0001 + flow_amstel_central / cap_amstel_central
+    # rw_east_south_amstel_central = 1.5001 + flow_east_south / cap_east_south + 1.1001 + flow_south_amstel / cap_south_amstel + 1.001 + flow_amstel_central / cap_amstel_central
     
-    if intervention:
-        rw_west_south_central = 1.0001 + flow_west_south / cap_west_south + flow_south_central /cap_south_central
-        rw_east_south_central = 1.0001 + flow_east_south / cap_east_south + flow_south_central / cap_south_central
+    # if intervention_north_south:
+    #     rw_west_south_central = 1.7001 + flow_west_south / cap_west_south + 1.2001 + flow_south_central /cap_south_central
+    #     rw_east_south_central = 1.5001 + flow_east_south / cap_east_south + 1.2001 + flow_south_central / cap_south_central
+        
+    # if intervention_west_amstel:
+    #     rw_west_amstel_central = 1.4001 + flow_west_amstel / cap_west_amstel + 1.0001 + flow_amstel_central / cap_amstel_central
     
-    if intervention:
-        T1 = np.array([-rw_west_south_amstel_central, -rw_west_south_central])
-        T2 = np.array([-rw_east_amstel_central, -rw_east_south_amstel_central, -rw_east_south_central])
-    else:
+    rw_west_south_amstel_central = (1 + 1.7) * (flow_west_south / cap_west_south) * crowding_multiplier + (1 + 1.1) * (flow_south_amstel / cap_south_amstel) * crowding_multiplier + (1 + 1.0) * (flow_amstel_central / cap_amstel_central) * crowding_multiplier
+    rw_east_amstel_central = (1 + 1.0) * (flow_east_amstel / cap_east_amstel) * crowding_multiplier + (1 + 1.0) * (flow_amstel_central / cap_amstel_central) * crowding_multiplier
+    rw_east_south_amstel_central = (1 + 1.5) * (flow_east_south / cap_east_south) * crowding_multiplier + (1 + 1.1) * (flow_south_amstel / cap_south_amstel) * crowding_multiplier + (1 + 1.0) * (flow_amstel_central / cap_amstel_central) * crowding_multiplier
+    
+    if intervention_north_south:
+        rw_west_south_central = (1 + 1.7) * (flow_west_south / cap_west_south) * crowding_multiplier + (1 + 1.2) * (flow_south_central / cap_south_central) * crowding_multiplier
+        rw_east_south_central = (1 + 1.5) * (flow_east_south / cap_east_south) * crowding_multiplier + (1 + 1.2) * (flow_south_central / cap_south_central) * crowding_multiplier
+        
+    if intervention_west_amstel:
+        rw_west_amstel_central = (1 + 1.4) * (flow_west_amstel / cap_west_amstel) * crowding_multiplier + (1 + 1.0) * (flow_amstel_central / cap_amstel_central) * crowding_multiplier
+        
+        
+        
+    
+    if not intervention_north_south and not intervention_west_amstel:
+        # Neither intervention
         T1 = np.array([-rw_west_south_amstel_central])
         T2 = np.array([-rw_east_amstel_central, -rw_east_south_amstel_central])
+
+    elif intervention_north_south and not intervention_west_amstel:
+        # Only intervention_north_south
+        T1 = np.array([-rw_west_south_amstel_central, -rw_west_south_central])
+        T2 = np.array([-rw_east_amstel_central, -rw_east_south_amstel_central, -rw_east_south_central])
+
+    elif intervention_north_south and intervention_west_amstel:
+        # Both interventions
+        T1 = np.array([-rw_west_south_amstel_central, -rw_west_south_central, -rw_west_amstel_central])
+        T2 = np.array([-rw_east_amstel_central, -rw_east_south_amstel_central, -rw_east_south_central])
+
+    else:
+        # Only intervention_west_amstel is True, which is invalid
+        raise ValueError("Invalid combination of interventions: 'intervention_west_amstel' cannot be True without 'intervention_north_south'")
     
     R = (T1[actions_w], T2[actions_e])
     T = (T1, T2)
@@ -336,7 +373,14 @@ def amsterdam_metro_north_south_intervention(actions_w, actions_e, config: NSour
     Network from the Amsterdam Metro with two sources and one destination.
     This is a variant of the amsterdam_metro function where the intervention is applied.
     """
-    return amsterdam_metro(actions_w, actions_e, config, intervention=True)
+    return amsterdam_metro(actions_w, actions_e, config, intervention_north_south=True)
+
+def amsterdam_metro_north_south_west_amstel_intervention(actions_w, actions_e, config: NSourcesGameConfig):
+    """
+    Network from the Amsterdam Metro with two sources and one destination.
+    This is a variant of the amsterdam_metro function where the intervention is applied.
+    """
+    return amsterdam_metro(actions_w, actions_e, config, intervention_north_south=True, intervention_west_amstel=True)
 
 def amsterdam_metro_with_south(actions_w, actions_e, actions_z, config: NSourcesGameConfig, intervention=False):
     """
