@@ -256,7 +256,7 @@ def fairness_braess_interventions_1_and_2(actions_1, actions_2, config: NSources
     return R, T
 
 
-def amsterdam_metro(actions_w, actions_e, config: NSourcesGameConfig, crowding_multiplier=2.0, intervention_north_south=False, intervention_west_amstel=False):
+def amsterdam_metro(actions_w, actions_e, config: NSourcesGameConfig, crowding_multiplier=1.0, intervention_north_south=False, intervention_west_amstel=False):
     """
     Network from the Amsterdam Metro with two sources and one destination.
     """
@@ -340,8 +340,6 @@ def amsterdam_metro(actions_w, actions_e, config: NSourcesGameConfig, crowding_m
         
     if intervention_west_amstel:
         rw_west_amstel_central = (1 + 1.4) * (flow_west_amstel / cap_west_amstel) * crowding_multiplier + (1 + 1.0) * (flow_amstel_central / cap_amstel_central) * crowding_multiplier
-        
-        
         
     
     if not intervention_north_south and not intervention_west_amstel:
