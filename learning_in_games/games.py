@@ -319,16 +319,16 @@ def amsterdam_metro(actions_w, actions_e, config: NSourcesGameConfig, crowding_m
     if intervention_west_amstel:
         flow_west_amstel = west_amstel_central
         
-    rw_west_south_amstel_central = 17.001 + 17.001 * (flow_west_south / cap_west_south) + 11.001 + 11.001 * (flow_south_amstel / cap_south_amstel) + 10.001 + 10.001 * (flow_amstel_central / cap_amstel_central)
-    rw_east_amstel_central = 10.001 + 10.001 * (flow_east_amstel / cap_east_amstel) + 10.001 + 10.001 * (flow_amstel_central / cap_amstel_central)
-    rw_east_south_amstel_central = 15.001 + 15.001 * (flow_east_south / cap_east_south) + 11.001 + 11.001 * (flow_south_amstel / cap_south_amstel) + 10.001 + 10.001 * (flow_amstel_central / cap_amstel_central)
+    rw_west_south_amstel_central = 17 + 17 * (flow_west_south / cap_west_south) + 11 + 11 * (flow_south_amstel / cap_south_amstel) + 10 + 10 * (flow_amstel_central / cap_amstel_central)
+    rw_east_amstel_central = 10 + 10 * (flow_east_amstel / cap_east_amstel) + 10 + 10 * (flow_amstel_central / cap_amstel_central)
+    rw_east_south_amstel_central = 15 + 15 * (flow_east_south / cap_east_south) + 11 + 11 * (flow_south_amstel / cap_south_amstel) + 10 + 10 * (flow_amstel_central / cap_amstel_central)
 
     if intervention_north_south:
-        rw_west_south_central = 17.001 + 17.001 * (flow_west_south / cap_west_south) + 12.001 + 12.001 * (flow_south_central / cap_south_central)
-        rw_east_south_central = 15.001 + 15.001 * (flow_east_south / cap_east_south) + 12.001 + 12.001 * (flow_south_central / cap_south_central)
+        rw_west_south_central = 17 + 17 * (flow_west_south / cap_west_south) + 12 + 12 * (flow_south_central / cap_south_central)
+        rw_east_south_central = 15 + 15 * (flow_east_south / cap_east_south) + 12 + 12 * (flow_south_central / cap_south_central)
 
     if intervention_west_amstel:
-        rw_west_amstel_central = 14.001 + 14.001 * (flow_west_amstel / cap_west_amstel) + 10.001 + 10.001 * (flow_amstel_central / cap_amstel_central)
+        rw_west_amstel_central = 14 + 14 * (flow_west_amstel / cap_west_amstel) + 10 + 10 * (flow_amstel_central / cap_amstel_central)
 
     # rw_west_south_amstel_central = (1 + 1.7) * (flow_west_south / cap_west_south) * crowding_multiplier + (1 + 1.1) * (flow_south_amstel / cap_south_amstel) * crowding_multiplier + (1 + 1.0) * (flow_amstel_central / cap_amstel_central) * crowding_multiplier
     # rw_east_amstel_central = (1 + 1.0) * (flow_east_amstel / cap_east_amstel) * crowding_multiplier + (1 + 1.0) * (flow_amstel_central / cap_amstel_central) * crowding_multiplier
